@@ -1,0 +1,31 @@
+{
+  "title": "Photography",
+  "subtitle": "by Your Name",
+  "description": "Photos from around the world.",
+
+  "author": "Your Name",
+  "bio": "A few words about you and your photography.\n\nA second paragraph if you like.",
+  "email": "",
+  "links": [
+    { "label": "Instagram", "url": "https://instagram.com/your-handle" },
+    { "label": "GitHub", "url": "https://github.com/niko1499/photo-grid" }
+  ],
+
+  "sort": "newest",
+  "exif_fields": ["camera", "focal", "aperture", "shutter", "iso", "author"],
+
+  // How much of each photo's own EXIF goes into the published .webp images:
+  //   "none"    strip all of it
+  //   "credits" keep just Artist and Copyright (the default)
+  //   "all"     keep everything, GPS included -- the build prints a big warning
+  //              naming the files that would publish their location.
+  // Always dropped, even in "all": Orientation (the pixels are already rotated) and the
+  // colour profile (the pixels are converted to sRGB, so it would describe the wrong space).
+  // Set this in site.json; the build reads it from there.
+  "metadata": "credits",
+
+  "thumb_size": 480,
+  "large_size": 2200,
+  "quality": 80,
+  "wide_ratio": 1.15
+}

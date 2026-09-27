@@ -1,0 +1,23 @@
+{
+  "title": "Photography",
+  "subtitle": "by Your Name",
+  "description": "Photos from around the world.",
+
+  "author": "Your Name",
+  "bio": "A few words about you and your photography.\n\nA second paragraph if you like.",
+  "email": "",
+  "links": [
+    { "label": "Instagram", "url": "https://instagram.com/your-handle" },
+    { "label": "GitHub", "url": "https://github.com/niko1499/photo-grid" }
+  ],
+
+  "sort": "newest",
+  "exif_fields": ["camera", "focal", "aperture", "shutter", "iso", "author"],
+
+  "metadata": "credits",
+
+  "thumb_size": 480,
+  "large_size": 2200,
+  "quality": 80,
+  "wide_ratio": 1.15
+}

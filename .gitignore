@@ -1,0 +1,8 @@
+_site/
+__pycache__/
+.DS_Store
+Thumbs.db
+
+# Backup files
+*.bak
+*.bak-*

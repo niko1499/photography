@@ -1,0 +1,237 @@
+/* Theme: dark charcoal, edge-to-edge square mosaic, spaced uppercase header.
+   Everything you might want to tweak lives in :root. */
+:root {
+  color-scheme: dark;
+  --bg: #242629;
+  --surface: #2e3136;
+  --raised: #1d1f21;
+  --line: rgba(255, 255, 255, 0.1);
+  --text: #f4f4f5;
+  --muted: rgba(244, 244, 245, 0.6);
+  --gap: 2px;
+  --bar: 3.25rem;
+  --tile: clamp(9rem, 16vw, 15rem);    /* minimum photo tile width: 2 columns on phones, ~6 on laptops */
+  --album: clamp(11rem, 26vw, 22rem);  /* minimum album tile width */
+  --zoom: 1;                           /* set by the zoom slider in app.js, 0.5 to 2 */
+  --font: "Source Sans 3", "Source Sans Pro", system-ui, -apple-system, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html { scrollbar-gutter: stable; background: var(--bg); color: var(--text); font-family: var(--font); -webkit-text-size-adjust: 100%; }
+html:has(dialog[open]) { overflow: hidden; }
+body { margin: 0; min-height: 100dvh; display: flex; flex-direction: column; line-height: 1.5; }
+main { flex: 1; }
+a { color: inherit; text-decoration: none; }
+button { font: inherit; color: inherit; }
+[hidden] { display: none !important; }
+:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
+
+/* ---- Header ---------------------------------------------------------------- */
+.bar {
+  position: sticky; top: 0; z-index: 10;
+  display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+  min-height: var(--bar);
+  padding: 0 max(1rem, env(safe-area-inset-right)) 0 max(1rem, env(safe-area-inset-left));
+  background: var(--bg);
+  border-bottom: 1px solid var(--line);
+}
+.brand {
+  min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font-size: 0.8rem; font-weight: 300; letter-spacing: 0.22em; text-transform: uppercase;
+}
+.brand strong { font-weight: 600; }
+nav { display: flex; align-items: center; gap: 1.5rem; }
+nav > a, nav > button {
+  padding: 0.5rem 0; border: 0; border-bottom: 2px solid transparent; background: none; cursor: pointer;
+  font-size: 0.75rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted);
+  transition: color 0.15s;
+}
+nav > a:hover, nav > button:hover, nav > a[aria-current] { color: var(--text); }
+nav > a[aria-current] { border-bottom-color: currentColor; }
+/* View toggle: square grid  /  original proportions */
+.modes { position: relative; display: flex; align-items: center; gap: 0.15rem; }
+nav > a, nav > button { position: relative; }
+nav .modes + a::before,
+nav .modes + button::before,
+nav .zoom + .modes::before {
+  content: ""; position: absolute; left: -0.8rem; top: 50%; transform: translateY(-50%);
+  width: 1px; height: 1.1rem; background: var(--line);
+}
+.modes button {
+  display: grid; place-items: center; width: 2.25rem; height: 2.25rem; padding: 0;
+  border: 0; border-radius: 4px; background: none; color: var(--muted); cursor: pointer;
+  transition: color 0.15s, background-color 0.15s;
+}
+.modes button:hover { color: var(--text); }
+.modes button[aria-pressed="true"] { color: var(--text); background: rgba(255, 255, 255, 0.11); }
+.modes svg { width: 1.2rem; height: 1.2rem; }
+.modes path { fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; }
+.modes rect { fill: currentColor; }
+
+/* Zoom: 50%-200%, defaults to 100% and snaps back near it. Ctrl +/- and Ctrl+scroll (over the
+   photos, not this bar) also work; see app.js. No numbers are shown, just the tick marks below. */
+.zoom { display: flex; align-items: center; gap: 0.55rem; }
+.zoom-icon { width: 1.05rem; height: 1.05rem; flex: none; color: var(--muted); }
+.zoom-icon circle, .zoom-icon path { fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; }
+
+.zoom-track { position: relative; flex: none; display: flex; align-items: center; width: 5.5rem; height: 1.4rem; }
+.zoom-track input[type="range"] {
+  -webkit-appearance: none; appearance: none; width: 100%; height: 100%; margin: 0; background: none; cursor: pointer;
+}
+.zoom-track input[type="range"]::-webkit-slider-runnable-track { height: 2px; background: var(--line); border-radius: 1px; }
+.zoom-track input[type="range"]::-moz-range-track { height: 2px; border: 0; background: var(--line); border-radius: 1px; }
+.zoom-track input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 0.65rem; height: 0.65rem; margin-top: -0.31rem; border-radius: 50%;
+  background: var(--text); box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.15); transition: box-shadow 0.15s;
+}
+.zoom-track input[type="range"]::-moz-range-thumb { width: 0.65rem; height: 0.65rem; border: 0; border-radius: 50%; background: var(--text); }
+.zoom-track input[type="range"]:hover::-webkit-slider-thumb,
+.zoom-track input[type="range"]:focus-visible::-webkit-slider-thumb,
+.zoom-track input[type="range"]:hover::-moz-range-thumb,
+.zoom-track input[type="range"]:focus-visible::-moz-range-thumb { box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.15); }
+.zoom-track input[type="range"]:focus-visible { outline: none; } /* the thumb shows its own focus ring above */
+
+.zoom-track .tick {
+  position: absolute; top: 50%; left: 0.325rem; transform: translate(-50%, -50%);
+  width: 1px; height: 0.3rem; background: var(--muted); pointer-events: none;
+}
+.zoom-track .tick.max { left: calc(100% - 0.325rem); }
+.zoom-track .tick.default { left: calc(0.325rem + (100% - 0.65rem) * 0.3333); height: 0.55rem; background: var(--text); }
+
+/* An invisible spacer: forces whatever comes after it onto a new line, but only where set to
+   full width below. On any row that already has room to spare, it stays zero-size and does nothing. */
+.nav-break { flex-basis: 0; width: 0; }
+
+@media (max-width: 34rem) {
+  /* Phones: site name on its own line, then the view controls, then the tabs -- three rows in all */
+  .bar { flex-wrap: wrap; align-content: center; gap: 0; padding-top: 0.55rem; padding-bottom: 0.1rem; }
+  .brand { flex: 1 0 100%; font-size: 0.75rem; letter-spacing: 0.12em; }
+  nav { flex: 1 0 100%; flex-wrap: wrap; gap: 1.1rem; row-gap: 0.5rem; }
+  nav > a, nav > button { font-size: 0.7rem; letter-spacing: 0.1em; }
+  .nav-break { flex-basis: 100%; height: 0; }
+  nav .modes + a::before,
+  nav .modes + button::before,
+  nav .zoom + .modes::before { display: none; }
+}
+@media (max-width: 22rem) {
+  nav { gap: 0.8rem; }
+  .modes button { width: 2rem; }
+  .zoom-track { width: 4rem; }
+}
+
+/* ---- Mosaic ---------------------------------------------------------------- */
+.grid {
+  display: grid; gap: var(--gap); padding: var(--gap);
+  --min: calc(var(--tile) * var(--zoom));
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, var(--min)), 1fr));
+}
+.grid.albums { --min: calc(var(--album) * var(--zoom)); }
+.grid.albums.packed { --min: calc(var(--tile) * var(--zoom)); } /* Original view: covers use the same column size as photos */
+
+.tile { position: relative; display: block; aspect-ratio: 1; overflow: hidden; background: var(--surface); }
+.tile:focus-visible { outline-offset: -3px; }
+.tile img {
+  position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 40%;
+  opacity: 0; transition: opacity 0.4s, transform 0.5s, filter 0.3s;
+}
+.tile img.in { opacity: 1; }
+
+/* Original-proportions view: app.js positions every tile (see packLanes). Each keeps its photo's exact shape;
+   the .probe element only lets the script read the minimum column width from CSS. */
+.grid.packed { display: block; position: relative; padding: 0; }
+.grid.packed .tile { position: absolute; aspect-ratio: auto; }
+.grid.packed .probe { position: absolute; visibility: hidden; height: 0; width: min(100%, var(--min)); }
+
+/* Label that fades in over a photo tile on hover (album name) */
+.tile .tag {
+  position: absolute; inset: auto 0 0 0; padding: 2.5rem 0.8rem 0.65rem;
+  font-size: 0.85rem; background: linear-gradient(transparent, rgba(0, 0, 0, 0.7));
+  opacity: 0; transition: opacity 0.2s;
+}
+.tile:hover .tag, .tile:focus-visible .tag { opacity: 1; }
+@media (hover: none) { .tile .tag { display: none; } }
+
+/* Album tiles keep their caption visible */
+.tile .cap {
+  position: absolute; inset: auto 0 0 0; padding: 3rem clamp(0.6rem, 2vw, 1rem) 0.8rem;
+  background: linear-gradient(transparent, rgba(0, 0, 0, 0.72));
+}
+.tile .cap b { display: block; font-size: clamp(1rem, 1.2vw + 0.6rem, 1.2rem); font-weight: 600; line-height: 1.25; }
+.tile .cap span { display: inline-block; margin-right: 0.9rem; font-size: 0.8rem; color: rgba(255, 255, 255, 0.75); }
+
+/* ---- Album page header, empty and error states ----------------------------- */
+.head { display: grid; gap: 0.15rem; padding: 1.25rem 1rem 0.9rem; }
+.head .back { display: inline-flex; align-items: center; justify-self: start; gap: 0.15rem; margin-left: -0.3rem; font-size: 0.85rem; color: var(--muted); }
+.head .back:hover { color: var(--text); }
+.head .back svg { width: 1.1rem; height: 1.1rem; }
+.head h1 { margin: 0; font-size: 1.6rem; font-weight: 600; line-height: 1.2; }
+.head .meta { display: flex; flex-wrap: wrap; gap: 0 1.1rem; font-size: 0.875rem; color: var(--muted); }
+
+.notice { max-width: 34rem; margin: 18vh auto 0; padding: 0 1.25rem; }
+.notice h1 { margin: 0 0 0.5rem; font-size: 1.25rem; font-weight: 600; }
+.notice p { margin: 0 0 0.75rem; color: var(--muted); }
+.notice code { padding: 0.1em 0.4em; border-radius: 3px; background: var(--surface); color: var(--text); font-size: 0.9em; }
+
+footer { padding: 1.5rem 1rem calc(1.5rem + env(safe-area-inset-bottom)); font-size: 0.8rem; color: var(--muted); }
+
+/* ---- Icon buttons ---------------------------------------------------------- */
+.icon { display: grid; place-items: center; width: 2.75rem; height: 2.75rem; padding: 0; border: 0; border-radius: 50%; background: none; cursor: pointer; }
+.icon svg { width: 1.6rem; height: 1.6rem; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+.icon:hover { background: rgba(255, 255, 255, 0.1); }
+.head .back svg { fill: none; stroke: currentColor; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }
+
+/* ---- Photo viewer ---------------------------------------------------------- */
+dialog { padding: 0; border: 0; color: var(--text); }
+dialog::backdrop { background: rgba(0, 0, 0, 0.6); }
+
+#lightbox {
+  width: 100%; height: 100dvh; max-width: none; max-height: none; margin: 0; inset: 0;
+  background: #0e0f10;
+}
+#lightbox[open] { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; animation: fade 0.2s ease-out; }
+@keyframes fade { from { opacity: 0; } }
+
+.lb-top {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0.25rem 0.5rem 0 1rem; font-size: 0.85rem; color: var(--muted); font-variant-numeric: tabular-nums;
+}
+.lb-stage { position: relative; display: flex; align-items: center; justify-content: center; min-height: 0; min-width: 0; padding: 0 0.5rem; outline: none; touch-action: pan-y pinch-zoom; }
+.lb-stage > img { display: block; max-width: 100%; max-height: 100%; object-fit: contain; user-select: none; -webkit-user-drag: none; }
+.icon.nav { position: absolute; top: 50%; translate: 0 -50%; width: 3rem; height: 4.5rem; border-radius: 4px; background: rgba(0, 0, 0, 0.3); color: rgba(255, 255, 255, 0.85); }
+.icon.nav:hover { background: rgba(0, 0, 0, 0.6); }
+.icon.prev { left: 0.75rem; }
+.icon.next { right: 0.75rem; }
+#lightbox.single .nav { display: none; }
+@media (max-width: 34rem) { .icon.nav { width: 2.25rem; height: 3.5rem; } .icon.prev { left: 0.25rem; } .icon.next { right: 0.25rem; } }
+
+.lb-info {
+  display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 0.15rem 2rem;
+  min-height: 3.25rem; padding: 0.7rem 1rem calc(0.7rem + env(safe-area-inset-bottom)); font-size: 0.9rem;
+}
+.lb-info p { margin: 0; }
+.where b { font-weight: 600; }
+.where span { margin-left: 0.8rem; color: var(--muted); }
+.exif { display: flex; flex-wrap: wrap; gap: 0 1.25rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+/* ---- About drawer ---------------------------------------------------------- */
+#about {
+  width: min(26rem, 100%); height: 100dvh; max-width: none; max-height: none; margin: 0 0 0 auto;
+  border-left: 1px solid var(--line); background: var(--raised);
+  transform: translateX(100%);
+  transition: transform 0.3s ease, display 0.3s allow-discrete, overlay 0.3s allow-discrete;
+}
+#about[open] { transform: none; }
+@starting-style { #about[open] { transform: translateX(100%); } }
+.drawer { display: grid; align-content: start; gap: 0.5rem; min-height: 100%; padding: 0.75rem 1.5rem 2rem; }
+.drawer > .icon { justify-self: end; margin-right: -0.75rem; }
+#about-body h2 { margin: 0 0 0.75rem; font-size: 1.25rem; font-weight: 600; }
+#about-body p { margin: 0 0 1rem; color: rgba(244, 244, 245, 0.85); max-width: 60ch; }
+#about-body ul { display: grid; gap: 0.35rem; margin: 1.5rem 0 0; padding: 0; list-style: none; }
+#about-body li a { border-bottom: 1px solid var(--line); }
+#about-body li a:hover { border-color: var(--text); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
