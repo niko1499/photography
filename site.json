@@ -3,9 +3,13 @@
   "subtitle": "by Nikolas Gamarra",
   "description": "Photos from around the world.",
   "author": "Nikolas Gamarra",
-  "bio": "In my free time I enjoy shooting film photos on my Ricoh KR-30sp. I got to do dark room developing and enlarging during High School for a photography class.\n\nThis site is developted as a github pages template if you wish to copy it to display your own work visit https://github.com/niko1499/photo-grid.",
+  "bio": "In my free time I enjoy shooting film photos on my Ricoh KR-30sp. This site contains a mixture of film and digital photography. I first got into film photography in highschool where I got to do dark room developing and enlarging for a photography class.\n\nThis site is developted as a github pages template if you wish to copy it to display your own work visit the template link below",
   "email": "",
   "links": [
+    {
+      "label": "Template Website",
+      "url": "https://github.com/niko1499/photo-grid."
+    },
     {
       "label": "Instagram",
       "url": "https://www.instagram.com/nxg1499/"
@@ -27,7 +31,7 @@
     "shutter",
     "iso",
     "author"
-  ],
+  ], 
   "metadata": "credits",
   "thumb_size": 480,
   "large_size": 2200,
