@@ -497,20 +497,21 @@ def ext_outputs_ready(ext_cache: dict, img_dir: Path, key: str) -> bool:
             and (not meta["wide"] or (img_dir / "mid" / rel).exists()))
 
 
-def read_url_list(path: Path) -> list[tuple[str, str, str | None]]:
+def read_url_list(path: Path) -> list[tuple[str, str, str | None, int]]:
     """Each line in a urls.txt is one externally hosted photo: a URL, then optionally a date
     (2025-05-31) and a caption after it. Blank lines and lines starting with # are ignored, so you
     can leave notes for yourself. The date is optional, and only worth typing for a host that
-    doesn't keep camera data in what it serves -- otherwise it's read from the photo itself."""
+    doesn't keep camera data in what it serves -- otherwise it's read from the photo itself.
+    Each tuple also carries the line the URL sits on, so a note about one can point straight at it."""
     out = []
-    for raw in path.read_text(encoding="utf-8").splitlines():
+    for lineno, raw in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
         line = raw.strip()
         if not line or line.startswith("#"):
             continue
         parts = line.split()
         date = parts[1] if len(parts) > 1 and re.fullmatch(r"\d{4}-\d{2}-\d{2}", parts[1]) else None
         caption = " ".join(parts[2:] if date else parts[1:]).strip()
-        out.append((parts[0], caption, date))
+        out.append((parts[0], caption, date, lineno))
     return out
 
 
@@ -1034,9 +1035,13 @@ def main() -> int:
             album["entries"].append(entry)
 
     # ---- externally hosted photos (urls.txt) -----------------------------------
-    def add_one(key: str, album: dict | None, exif: dict, w: int, h: int, wide: bool,
+    def add_one(key: str, rel: str, album: dict | None, exif: dict, w: int, h: int, wide: bool,
                 shown_date: str | None, caption: str) -> None:
-        """Put one fetched photo into the site, exactly as a local photo would go in."""
+        """Put one fetched photo into the site, exactly as a local photo would go in.
+
+        `rel` is the output path the photo was rendered to. It is a parameter rather than the
+        loop's own `rel` on purpose: reading the loop variable let a photo be published under a
+        path that nothing had written to (see adopt() below)."""
         exif = dict(exif)  # a copy: the caller may hand in the shared cache's own dict
         if shown_date:
             exif["date"] = shown_date
@@ -1071,9 +1076,35 @@ def main() -> int:
         seen_ext_keys.add(key)
         return f"{folder}/{name}.webp"
 
+    def adopt(key: str, rel: str) -> None:
+        """Make sure the path claim() just handed out really holds the rendered photo.
+
+        ext_outputs_ready() checks the path stored in the cache -- where the FIRST listing of this
+        URL was rendered. When the same photo is listed again from another album, claim() hands out
+        a different path in that album's folder and nothing would ever be written there, so every
+        entry published below would 404. Copy the already-rendered files across instead."""
+        cached_rel = ext_cache[key]["rel"]
+        if cached_rel == rel:
+            return
+        for sub in ("thumb", "large", "mid"):
+            src = img_dir / sub / cached_rel
+            if src.exists():
+                dst = img_dir / sub / rel
+                dst.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copyfile(src, dst)
+
     for url_file in discover_url_files():
         rel_dir = url_file.relative_to(PHOTOS_DIR).parent.parts
-        for url, caption, date in read_url_list(url_file):
+        first_seen: dict[str, int] = {}  # this file's URLs, mapped to the line each first appears on
+        for url, caption, date, lineno in read_url_list(url_file):
+            # The same URL twice in one file is one photo listed twice. It can only ever render to
+            # one path, so a second line here would publish an entry for a file nothing writes --
+            # and would show the visitor an empty tile. Say so and move on.
+            if url in first_seen:
+                print(f"note: {url_file.relative_to(PHOTOS_DIR).as_posix()}:{lineno} repeats line "
+                      f"{first_seen[url]} -- ignored (a URL listed twice is the same photo)")
+                continue
+            first_seen[url] = lineno
             album = get_album(rel_dir, albums, used_album_slugs)
             # One urls.txt line can be a whole shared album. Lines that turned out to be albums are
             # remembered, so later builds re-read just those (photos you add to the album in Google
@@ -1124,8 +1155,9 @@ def main() -> int:
                     thumb, large = img_dir / "thumb" / rel, img_dir / "large" / rel
                     try:
                         if ext_outputs_ready(ext_cache, img_dir, key):
+                            adopt(key, rel)
                             cached += 1
-                            add_one(key, album, ext_cache[key]["exif"], ext_cache[key]["w"],
+                            add_one(key, rel, album, ext_cache[key]["exif"], ext_cache[key]["w"],
                                     ext_cache[key]["h"], ext_cache[key]["wide"], None, "")
                             continue
                         image_url = spec["url"]
@@ -1151,7 +1183,7 @@ def main() -> int:
                                           "note": f"{source} shared album"}
                         made += 1
                         print(f"  + album photo {i}/{len(shared)}: {w}x{h}")
-                        add_one(key, album, exif, w, h, wide, spec.get("date", ""), "")
+                        add_one(key, rel, album, exif, w, h, wide, spec.get("date", ""), "")
                     except Exception as e:  # one bad photo shouldn't sink the album, or the build
                         print(f"warning: skipped a photo in {url} ({type(e).__name__}: {e})")
                 continue
@@ -1161,8 +1193,9 @@ def main() -> int:
                 rel = claim(key, album)
                 thumb, large = img_dir / "thumb" / rel, img_dir / "large" / rel
                 if ext_outputs_ready(ext_cache, img_dir, key):
+                    adopt(key, rel)
                     cached += 1
-                    add_one(key, album, ext_cache[key]["exif"], ext_cache[key]["w"],
+                    add_one(key, rel, album, ext_cache[key]["exif"], ext_cache[key]["w"],
                             ext_cache[key]["h"], ext_cache[key]["wide"],
                             f"{date}T00:00:00" if date else None, caption)
                     continue
@@ -1187,7 +1220,8 @@ def main() -> int:
                         print(f"      {field} from the host: {value}")
                 # A date typed in urls.txt wins over the host's record and the file's own EXIF, so
                 # you can always override.
-                add_one(key, album, exif, w, h, wide, f"{date}T00:00:00" if date else None, caption)
+                add_one(key, rel, album, exif, w, h, wide, f"{date}T00:00:00" if date else None,
+                       caption)
             except Exception as e:  # a dead link or a blocked host shouldn't sink the whole build
                 print(f"warning: skipped {url} ({type(e).__name__}: {e})")
                 continue
